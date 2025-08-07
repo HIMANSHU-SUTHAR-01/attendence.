@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Attendance Tracker</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+    h2 {
+      margin-top: 30px;
+    }
+    input, button {
+      padding: 8px;
+      margin: 5px;
+    }
+    .card {
+      border: 1px solid #ccc;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 8px;
+    }
+    .card h4 {
+      margin: 0 0 10px 0;
+    }
+    .percent {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Attendance Tracker</h1>
+
+  <h2>Add Subject or Lab</h2>
+  <input type="text" id="subjectName" placeholder="Subject/Lab Name">
+  <input type="number" id="totalClasses" placeholder="Total Classes">
+  <button onclick="addSubject()">Add</button>
+
+  <h2>Your Subjects/Labs</h2>
+  <div id="subjectList"></div>
+
+  <script>
+    let subjects = JSON.parse(localStorage.getItem('subjects')) || [];
+
+    function saveData() {
+      localStorage.setItem('subjects', JSON.stringify(subjects));
+    }
+
+    function addSubject() {
+      const name = document.getElementById('subjectName').value.trim();
+      const total = parseInt(document.getElementById('totalClasses').value);
+      if (!name || isNaN(total) || total <= 0) return alert('Fill all fields correctly.');
+
+      subjects.push({ name, total, attended: 0 });
+      saveData();
+      renderList();
+
+      document.getElementById('subjectName').value = '';
+      document.getElementById('totalClasses').value = '';
+    }
+
+    function markPresent(index) {
+      if (subjects[index].attended < subjects[index].total) {
+        subjects[index].attended++;
+        saveData();
+        renderList();
+      }
+    }
+
+    function undoPresent(index) {
+      if (subjects[index].attended > 0) {
+        subjects[index].attended--;
+        saveData();
+        renderList();
+      }
+    }
+
+    function renderList() {
+      const container = document.getElementById('subjectList');
+      container.innerHTML = '';
+
+      subjects.forEach((subj, index) => {
+        const percent = ((subj.attended / subj.total) * 100).toFixed(1);
+        const requiredAttendance = 75;
+        let message = '';
+
+        if (percent >= requiredAttendance) {
+          // How many can be bunked
+          let canBunk = 0;
+          while (((subj.attended / (subj.total + canBunk)) * 100) >= requiredAttendance) {
+            canBunk++;
+          }
+          canBunk--;
+          message = `You can bunk ${canBunk} more class(es)`;
+        } else {
+          // How many more needed
+          let needed = 0;
+          while (((subj.attended + needed) / (subj.total + needed)) * 100 < requiredAttendance) {
+            needed++;
+          }
+          message = `Attend next ${needed} class(es) to reach 75%`;
+        }
+
+        container.innerHTML += `
+          <div class="card">
+            <h4>${subj.name}</h4>
+            <p>Attended: ${subj.attended} / ${subj.total}</p>
+            <p class="percent">${percent}% attendance</p>
+            <p>${message}</p>
+            <button onclick="markPresent(${index})">Mark Present</button>
+            <button onclick="undoPresent(${index})">Undo Present</button>
+          </div>
+        `;
+      });
+    }
+
+    renderList();
+  </script>
+</body>
+</html>
+Upload attendance tracker HTML
